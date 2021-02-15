@@ -1,10 +1,58 @@
-import React from 'react';
-import { Container, Grid } from '@material-ui/core';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+
+import { Container, Grid, Snackbar } from '@material-ui/core';
 import Box from '@material-ui/core/Box';
+
+import { Difficulty, reply, restart } from './redux/actions/quizz';
+import { IStore } from './models/index';
+import { getQuizzListItems } from './redux/actions/quizz';
 
 import { StyledButtonTrue, StyledButtonFalse } from './style';
 
+export interface LocalState {
+  message: string;
+  isOpen: boolean;
+  className: 'good' | 'wrong';
+}
+
 export function App() {
+  const dispatch = useDispatch();
+  const { items, currentIndex, score } = useSelector(
+    (state: IStore) => state.quizz
+  );
+  const [state, setState] = useState<LocalState>({
+    message: '',
+    isOpen: false,
+    className: 'wrong',
+  });
+
+  const answerQuestion = (answer: 'True' | 'False'): void => {
+    const isTrue = answer === items[currentIndex].correct_answer;
+    const isLast = currentIndex === items.length - 1;
+    console.log(currentIndex, items.length);
+
+    dispatch(reply(isTrue, isLast));
+    setState({
+      ...state,
+      message: isTrue ? 'Well done' : 'Nope',
+      className: isTrue ? 'good' : 'wrong',
+      isOpen: true,
+    });
+  };
+
+  const playAgain = () => {
+    dispatch(restart());
+  };
+
+  const onSnackBarClose = () => {
+    setState({ ...state, isOpen: false });
+  };
+
+  useEffect(() => {
+    dispatch(getQuizzListItems(10, Difficulty.easy));
+  }, []);
+
   const renderHeader = () => {
     return (
       <Grid
@@ -18,7 +66,7 @@ export function App() {
         </Box>
         <Box mt={10} fontSize={20} className='txt'>
           {' '}
-          Score : TODO / TODO
+          Score : {score} / {items.length}
         </Box>
       </Grid>
     );
@@ -32,35 +80,66 @@ export function App() {
         alignItems='center'
         justify='center'
         style={{ minHeight: '40vh' }}>
-        <div className='txt question_number'>Question N° TODO / TODO </div>
-        <div className='txt question_number'> Category TODO </div>
-        <div className='txt'>
-          TypeScript Quiz starter ! Ici nous devrions afficher une question !
+        <div className='txt question_number'>
+          Question N° {currentIndex + 1} / {items.length}
         </div>
+        <div className='txt question_number'>
+          {items[currentIndex].category}{' '}
+        </div>
+        <div
+          className='txt'
+          dangerouslySetInnerHTML={{
+            __html: items[currentIndex].question,
+          }}></div>
       </Grid>
     );
   };
 
   const renderButton = () => {
-    return (
+    return currentIndex < items.length - 1 ? (
       <Grid
         container
         direction='row'
         alignItems='center'
         justify='space-evenly'>
-        <StyledButtonTrue>TRUE</StyledButtonTrue>
-        <StyledButtonFalse>FALSE</StyledButtonFalse>
+        <StyledButtonTrue onClick={() => answerQuestion('True')}>
+          TRUE
+        </StyledButtonTrue>
+        <StyledButtonFalse onClick={() => answerQuestion('False')}>
+          FALSE
+        </StyledButtonFalse>
+      </Grid>
+    ) : (
+      <Grid container direction='column' alignItems='center' justify='center'>
+        <Box mt={10} fontSize={20} className='txt'>
+          Final Score : {score} / {items.length}
+        </Box>
+        <StyledButtonFalse onClick={playAgain}>RESTART</StyledButtonFalse>
       </Grid>
     );
   };
 
-  return (
-    <Container maxWidth='lg'>
-      {renderHeader()}
-      {renderQuestionInfo()}
-      {renderButton()}
-    </Container>
-  );
+  const renderContent = () => {
+    return (
+      <>
+        {items.length > 0 && renderHeader()}
+        {items.length > 0 &&
+          currentIndex < items.length - 1 &&
+          renderQuestionInfo()}
+        {renderButton()}
+        <Snackbar
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          autoHideDuration={600}
+          open={state.isOpen}
+          onClose={onSnackBarClose}
+          message={state.message}
+          className={state.className}
+        />
+      </>
+    );
+  };
+
+  return <Container maxWidth='lg'>{renderContent()}</Container>;
 }
 
 export default App;

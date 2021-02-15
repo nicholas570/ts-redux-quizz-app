@@ -1,8 +1,8 @@
 import { combineReducers } from 'redux';
+import { quizzReducer } from './quizz';
 
 const rootReducer = combineReducers({
-    state: () => "On a du pain sur la planche."
+  quizz: quizzReducer,
 });
 
 export default rootReducer;
-

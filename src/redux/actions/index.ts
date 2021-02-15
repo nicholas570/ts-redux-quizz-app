@@ -1,0 +1,4 @@
+export const GET_QUIZZ_LIST = 'GET_QUIZZ_LIST';
+export const INCREMENT_SCORE = 'INCREMENT_SCORE';
+export const SET_NEXT_QUESTION = 'SET_NEXT_QUESTION';
+export const RESTART = 'RESTART';
